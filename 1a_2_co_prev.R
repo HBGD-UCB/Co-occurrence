@@ -13,6 +13,10 @@ library(binom)
 library(metafor)
 theme_set(theme_bw())
 
+#hbgdki pallet
+tableau10 <- c("#1F77B4","#FF7F0E","#2CA02C","#D62728", 
+               "#9467BD","#8C564B","#E377C2","#7F7F7F","#BCBD22","#17BECF")
+
 # load base functions
 source("U:/Scripts/Stunting/2-analyses/0_st_basefunctions.R")
 
@@ -69,34 +73,7 @@ dmn < dmn %>% arrange(status)
 table(dmn$agecat, dmn$status)
 
 
-#Stacked bar chart.
-#hbgdki pallet
-tableau10 <- c("#1F77B4","#FF7F0E","#2CA02C","#D62728", 
-               "#9467BD","#8C564B","#E377C2","#7F7F7F","#BCBD22","#17BECF")
 
-#Strip grant identifier and add country
-dmn$studyid <- gsub("^k.*?-" , "", dmn$studyid)
-dmn$studyid <- paste0(dmn$studyid, ", ", paste0(substring(as.character(dmn$country),1,1), tolower(substring(as.character(dmn$country),2))))
-dmn$studyid <- gsub("Tanzania, united republic of", "Tanzania", dmn$studyid)
-dmn$studyid <- gsub("africa", "Africa", dmn$studyid)
-
-library(scales)
-
-ggplot(dmn, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
-  scale_fill_manual(values=tableau10) +
-  xlab("Age") + ylab("Proportion") +
-  scale_y_continuous(labels = percent_format())
-
-ggplot(dmn, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
-  scale_fill_manual(values=tableau10) +
-  facet_wrap(~studyid) +
-  xlab("Age") + ylab("Proportion") +
-  scale_y_continuous(labels = percent_format()) +
-  theme(strip.background = element_blank(),
-        legend.position="bottom",
-        strip.text.x = element_text(size=12),
-        axis.text.x = element_text(size=12, angle = 45, hjust = 1), 
-        strip.text.y = element_text(angle = 0))
 
 
 # count measurements per study by age
@@ -129,7 +106,7 @@ prev.res$ptest.f=sprintf("%0.0f",prev.res$est)
 
 # plot cohort prevalence
 pdf("U:/Figures/co-occurance-ptprev-africa.pdf",width=11,height=5,onefile=TRUE)
-ggplot(prev.cohort[prev.cohort$region=="Africa",],
+p_africa <- ggplot(prev.cohort[prev.cohort$region=="Africa",],
        aes(y=y,x=age.f))+
   geom_point(size=2)+facet_wrap(~cohort)+
   geom_linerange(aes(ymin=ci.lb,ymax=ci.ub),
@@ -138,10 +115,12 @@ ggplot(prev.cohort[prev.cohort$region=="Africa",],
   xlab("Age in months")+
   ylab("Point prevalence (95% CI)")+
   ggtitle("Cohort-specific point prevalence of stunting and wasting co-occurance - Africa")
+
+print(p_africa)
 dev.off()
 
 pdf("U:/Figures/co-occurance-ptprev-latamer-eur.pdf",width=8,height=5,onefile=TRUE)
-ggplot(prev.cohort[prev.cohort$region=="Latin America"|
+p_latamer <- ggplot(prev.cohort[prev.cohort$region=="Latin America"|
                      prev.cohort$region=="Europe",],
        aes(y=y,x=age.f))+
   geom_point(size=2)+facet_wrap(~cohort)+
@@ -154,7 +133,7 @@ ggplot(prev.cohort[prev.cohort$region=="Latin America"|
 dev.off()
 
 pdf("U:/Figures/co-occurance-ptprev-asia.pdf",width=15,height=7,onefile=TRUE)
-ggplot(prev.cohort[prev.cohort$region=="Asia",],
+p_asia <- ggplot(prev.cohort[prev.cohort$region=="Asia",],
        aes(y=y,x=age.f))+
   geom_point(size=2)+facet_wrap(~cohort)+
   geom_linerange(aes(ymin=ci.lb,ymax=ci.ub),
@@ -163,11 +142,13 @@ ggplot(prev.cohort[prev.cohort$region=="Asia",],
   xlab("Age in months")+
   ylab("Point prevalence (95% CI)")+
   ggtitle("Cohort-specific point prevalence of stunting and wasting co-occurance - Asia")
+
+print(p_asia)
 dev.off()
 
 # plot pooled prevalence
 pdf("U:/Figures/co-occurance-ptprev-pool.pdf",width=10,height=4,onefile=TRUE)
-ggplot(prev.res,aes(y=est,x=agecat))+
+p_pool <- ggplot(prev.res,aes(y=est,x=agecat))+
   geom_point(size=3)+
   geom_errorbar(aes(ymin=lb,ymax=ub),width=0.05) +
   scale_color_manual(values=tableau10)+xlab("Age category")+
@@ -178,15 +159,84 @@ ggplot(prev.res,aes(y=est,x=agecat))+
   annotate("text",label=prev.res$ptest.f,x=prev.res$agecat,
            y=prev.res$est,hjust=-0.75,size=3)+
   ggtitle("Pooled point prevalence of stunting and wasting co-occurance")
+
+print(p_pool)
 dev.off()
 
 
 # export
 prev = dmn %>% 
   select(studyid,subjid,country,agecat,
-         cowaststunt, scowaststunt)
-
+         cowaststunt, cowaststunt)
 
 save(prev,file="U:/Data/Co-occurrence/co_prev.RData")
 
 
+#Relative proportion bar charts (Stacked bar chart)
+
+#Strip grant identifier and add country
+dmn$studyid <- gsub("^k.*?-" , "", dmn$studyid)
+dmn$studyid <- paste0(dmn$studyid, ", ", paste0(substring(as.character(dmn$country),1,1), tolower(substring(as.character(dmn$country),2))))
+dmn$studyid <- gsub("Tanzania, united republic of", "Tanzania", dmn$studyid)
+dmn$studyid <- gsub("africa", "Africa", dmn$studyid)
+
+library(scales)
+
+barplot <- ggplot(dmn, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Comparing distribution of co-occurrence, wasting only, stunting only, and healthy children at each age")
+
+
+barplot_cohort_strat <- ggplot(dmn, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10) +
+  facet_wrap(~studyid) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) +
+  theme(strip.background = element_blank(),
+        legend.position="bottom",
+        strip.text.x = element_text(size=12),
+        axis.text.x = element_text(size=12, angle = 45, hjust = 1), 
+        strip.text.y = element_text(angle = 0))
+
+
+barplot_NH <- ggplot(dmn[dmn$status!="Healthy",], aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10[-1]) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Comparing distribution of co-occurrence, wasting only, and stunting only\namong children wasted or stunted at each age")
+
+#Make plot of the proportion stunted among wasted and not wasted, and vice-versa
+d_wast <- dmn %>% filter(whz < -2) %>% mutate(status = ifelse(status=="Co-occurence", "Stunted", "Not stunted"))
+d_stunt <- dmn %>% filter(haz < -2) %>% mutate(status = ifelse(status=="Co-occurence", "Wasted", "Not wasted"))
+
+barplot_wast <- ggplot(d_wast, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Proportion of stunted children among children who are wasted")
+
+barplot_stunt <- ggplot(d_stunt, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10[-2]) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Proportion of wasted children among children who are stunted")
+
+
+#---------------------------------------------------------------------
+# Presentation sized plots.
+#---------------------------------------------------------------------
+
+#Combined pooled prev and bar chart
+multiplot(p_pool,barplot_NH)
+
+
+#Region stratified prevalence
+
+
+
+#-----------------------------------
+# save plot dataframe
+#-----------------------------------
+save(prev.res, dmn, file="U:/Data/Stunting/co_prev.RData")

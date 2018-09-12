@@ -263,7 +263,7 @@ save(ci.res, file="U:/Data/Co-occurrence/pooled_CI_res.RData")
 
 
 pdf("U:/Figures/co-occurance-ci-pool.pdf",width=8,height=8,onefile=TRUE)
-ggplot(ci.res[ci.res$outcome=="Ncases_co",],aes(y=est,x=agecat))+
+p_pool<- ggplot(ci.res[ci.res$outcome=="Ncases_co",],aes(y=est,x=agecat))+
   geom_point(size=3)+
   geom_errorbar(aes(ymin=lb,ymax=ub),width=0.05) +
   scale_color_manual(values=tableau10)+xlab("Age category")+
@@ -309,13 +309,13 @@ plotdf <- plotdf %>% arrange(agecat)
 
 table(plotdf$agecat, plotdf$which_first)
 
-ggplot(plotdf, aes(agecat, ..count..)) + geom_bar(aes(fill = which_first), position = "fill") +
+barplot <- ggplot(plotdf, aes(agecat, ..count..)) + geom_bar(aes(fill = which_first), position = "fill") +
   scale_fill_manual(values=tableau10) +
   #facet_wrap(~studyid) +
   xlab("Age") + ylab("Proportion") +
   scale_y_continuous(labels = percent_format()) +
   theme(strip.background = element_blank(),
-        legend.position="bottom",
+        legend.position="right",
         strip.text.x = element_text(size=12),
         axis.text.x = element_text(size=12, angle = 45, hjust = 1), 
         strip.text.y = element_text(angle = 0)) +
@@ -325,6 +325,63 @@ ggplot(plotdf, aes(agecat, ..count..)) + geom_bar(aes(fill = which_first), posit
 
 
 
+#FIX BELOW FROM PREVALENCE TO CI
+
+library(scales)
+
+barplot <- ggplot(dmn, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Comparing distribution of co-occurrence, wasting only, stunting only, and healthy children at each age")
 
 
+barplot_cohort_strat <- ggplot(dmn, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10) +
+  facet_wrap(~studyid) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) +
+  theme(strip.background = element_blank(),
+        legend.position="bottom",
+        strip.text.x = element_text(size=12),
+        axis.text.x = element_text(size=12, angle = 45, hjust = 1), 
+        strip.text.y = element_text(angle = 0))
+
+
+barplot_NH <- ggplot(dmn[dmn$status!="Healthy",], aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10[-1]) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Comparing distribution of co-occurrence, wasting only, and stunting only\namong children wasted or stunted at each age")
+
+#Make plot of the proportion stunted among wasted and not wasted, and vice-versa
+d_wast <- dmn %>% filter(whz < -2) %>% mutate(status = ifelse(status=="Co-occurence", "Stunted", "Not stunted"))
+d_stunt <- dmn %>% filter(haz < -2) %>% mutate(status = ifelse(status=="Co-occurence", "Wasted", "Not wasted"))
+
+barplot_wast <- ggplot(d_wast, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Proportion of stunted children among children who are wasted")
+
+barplot_stunt <- ggplot(d_stunt, aes(agecat, ..count..)) + geom_bar(aes(fill = status), position = "fill") +
+  scale_fill_manual(values=tableau10[-2]) +
+  xlab("Age") + ylab("Proportion") +
+  scale_y_continuous(labels = percent_format()) + 
+  ggtitle("Proportion of wasted children among children who are stunted")
+
+
+#---------------------------------------------------------------------
+# Presentation sized plots.
+#---------------------------------------------------------------------
+
+#Combined pooled CI and bar chart
+multiplot(p_pool,barplot)
+
+
+
+#-----------------------------------
+# save plot dataframe
+#-----------------------------------
+save(ci.res, dmn, file="U:/Data/Stunting/co_prev.RData")
 

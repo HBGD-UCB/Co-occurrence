@@ -383,5 +383,5 @@ multiplot(p_pool,barplot)
 #-----------------------------------
 # save plot dataframe
 #-----------------------------------
-save(ci.res, dmn, file="U:/Data/Stunting/co_prev.RData")
+save(ci.res, plotdf, file="U:/Data/Stunting/co_CI.RData")
 

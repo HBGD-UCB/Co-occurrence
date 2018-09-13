@@ -68,10 +68,18 @@ tableau10 <- c("#1F77B4","#FF7F0E","#2CA02C","#D62728",
                "#9467BD","#8C564B","#E377C2","#7F7F7F","#BCBD22","#17BECF")
 
 p<-ggplot(df, aes(x=agedays, y=haz, group=lag_WHZ_quart, color=lag_WHZ_quart)) + geom_smooth(method = 'gam', formula= y ~ s(x,  k=4, bs = "cs")) +
-  facet_wrap(~agecat, scales="free_x") +
+  facet_wrap(~agecat, scales="free_x", nrow=1) +
   scale_color_manual(values=tableau10, name = "Quartile of WHZ in\nthe prior 3 months")+
   xlab("Child age in days") + ylab("HAZ") + 
-  ggtitle("Spline curves of HAZ over 3-month age ranges\nstratified by quartile of WHZ in prior 3-month range.")
+  ggtitle("Spline curves of HAZ over 3-month age ranges\nstratified by quartile of WHZ in prior 3-month range.") +
+  theme(strip.background = element_blank(),
+        legend.position="bottom",
+        strip.text.x = element_text(size=12),
+        axis.text.x = element_text(size=12, angle = 0, hjust = 1)) 
+
+save(df, file="U:/Data/Stunting/HAZ_by_WHZ.RData")
+ggsave(p, file="U:/Figures/Stunting Webinar/HAZcurves_by_WHZ.png", width=5.7, height=4.6)
+
 
 
 #Calculate CI across 3 month age ranges.

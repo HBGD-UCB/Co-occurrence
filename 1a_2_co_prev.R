@@ -169,7 +169,7 @@ prev = dmn %>%
   select(studyid,subjid,country,agecat,
          cowaststunt, cowaststunt)
 
-save(prev,file="U:/Data/Co-occurrence/co_prev.RData")
+save(prev, file="U:/Data/Co-occurrence/co_prev.RData")
 
 
 #Relative proportion bar charts (Stacked bar chart)
@@ -239,4 +239,4 @@ multiplot(p_pool,barplot_NH)
 #-----------------------------------
 # save plot dataframe
 #-----------------------------------
-save(prev.res, dmn, file="U:/Data/Stunting/co_prev.RData")
+save(prev.res, prev.cohort, dmn, file="U:/Data/Stunting/co_prev.RData")

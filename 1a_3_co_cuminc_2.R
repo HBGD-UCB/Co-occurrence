@@ -112,12 +112,24 @@ incprop <- function(d, Agecat, RangeStart){
     filter(agecat==Agecat) %>%
     group_by(studyid,country,subjid) %>%  arrange(studyid,country,subjid, agedays) %>% 
     #mark if children started stunted and/or wasted. They need to recover to be included in the at-risk pool
-    mutate(start_stunt= as.numeric(first(lagHAZ) < -2)) %>%
+    mutate(start_stunt= as.numeric(first(lagHAZ) < -2), cumsum_notstunted=cumsum(as.numeric(haz >= -2 & lag(haz) >= -2)), anystuntrecovery=max(cumsum_notstunted)>0) %>%
     mutate(start_wast= as.numeric(first(lagWHZ) < -2), cumsum_notwasted=cumsum(as.numeric(whz >= -2 & lag(whz) >= -2)), anywastrecovery=max(cumsum_notwasted)>0) %>%
     #drop children never at risk (start stunted or started wasted and never recovered) and drop obs prior to wasting recovery
     filter((anywastrecovery & start_wast==1 & start_stunt==0) |
+             (start_wast==0 & anystuntrecovery & start_stunt==1) |
+             (anywastrecovery & start_wast==1 & anystuntrecovery & start_stunt==1) |
              (start_stunt==0 & start_wast==0)) %>%
-    subset(., select = -c(start_stunt, start_wast, cumsum_notwasted, anywastrecovery)) %>%
+    # filter((anywastrecovery & start_wast==1 ) |
+    #        (anystuntrecovery & start_stunt==1) |
+    #        (start_stunt==0 & start_wast==0)) %>%
+    #Drop obs before recovery
+    filter(!(start_stunt==1 & cumsum_notstunted==0)) %>% 
+    filter(!(start_wast==1 & cumsum_notwasted==0)) %>% 
+    #Drop children who had an onset of co-occurent wasting and stunting in a prior age interval
+    #Note: should I allow new co-occurence with wasting recovery?
+    #How to mark wasting recovery when it could happen any time in the prior age cat?
+    #filter(cumsum_co == 0) %>% #Look at any wasting or stunting in the time period, don't filter
+    subset(., select = -c(lagHAZ, lagWHZ, start_stunt, cumsum_notstunted, anystuntrecovery, start_wast, cumsum_notwasted, anywastrecovery)) %>%
     mutate(agecat=paste0(RangeStart,"-",Agecat), 
            minhaz=min(haz), anystunt=ifelse(minhaz< -2,1,0), 
            minwhz=min(whz), anywast=ifelse(minwhz< -2,1,0), 
@@ -157,14 +169,52 @@ incprop <- function(d, Agecat, RangeStart){
     mutate(N=n()) %>%
     subset(., select= -c(agedays, haz, whz, measurefreq, measid,  co_occurence, stuntinc, wastinc, minage_stunt_onset, minage_wast_onset)) %>%
     ungroup() %>% as.data.frame()
-  
   return(df)
 }
 
-#calculate any stunting from 6-12
+
+#Incprop first occurence
+incprop_first <- function(d, Agecat, RangeStart){
+  
+  df = d %>% ungroup() %>% 
+    arrange(studyid,country,subjid, agedays) %>% 
+    group_by(studyid,country,subjid,agecat) %>% 
+    #Mark any co-occurence in each age interval
+    mutate(agecat_co = 1*(min(haz) < (-2) & min(whz) < (-2))) %>% ungroup() %>%
+    group_by(studyid,country,subjid) %>% 
+    mutate(cumsum_co=cumsum(agecat_co)) %>%
+    filter(agecat==Agecat) %>%
+    group_by(studyid,country,subjid) %>%  arrange(studyid,country,subjid, agedays) %>% 
+    #Drop children who had an onset of co-occurent wasting and stunting in a prior age interval
+    #Note: should I allow new co-occurence with wasting recovery?
+    #How to mark wasting recovery when it could happen any time in the prior age cat?
+    filter(cumsum_co == 0) %>% #Look at any wasting or stunting in the time period, don't filter
+    subset(., select = -c(agecat_co, cumsum_co)) %>%
+    mutate(agecat=paste0(RangeStart,"-",Agecat), 
+           minhaz=min(haz), anystunt=ifelse(minhaz< -2,1,0), 
+           minwhz=min(whz), anywast=ifelse(minwhz< -2,1,0), 
+           anystunt_wast = as.numeric(anystunt==1 & anywast==1),
+           Nobs=n()) %>% slice(1) %>%
+    mutate(N=n()) %>%
+    subset(., select= -c(agedays, haz, whz)) %>%
+    ungroup() %>% as.data.frame()
+  return(df)
+}
+
+#calculate any stunting in later age ranges
 co_ci_6_12 <- incprop(d, Agecat="12 months", RangeStart="6")
 co_ci_12_18 <- incprop(d, Agecat="18 months", RangeStart="12")
 co_ci_18_24 <- incprop(d, Agecat="24 months", RangeStart="18")
+
+
+#calculate first onset in later age ranges
+# co_ci_6_12_first <- incprop_first(d, Agecat="12 months", RangeStart="6")
+# co_ci_12_18_first <- incprop_first(d, Agecat="18 months", RangeStart="12")
+# co_ci_18_24_first <- incprop_first(d, Agecat="24 months", RangeStart="18")
+
+table(co_ci_6_12$anystunt_wast)
+table(co_ci_12_18$anystunt_wast)
+table(co_ci_18_24$anystunt_wast)
 
 #Combine age categories
 co_ci <- bind_rows(co_ci_0_6, co_ci_6_12, co_ci_12_18, co_ci_18_24)
@@ -232,7 +282,7 @@ ci.res4=lapply(as.list(unique(co_ci$agecat)),function(x)
 
 
 
-ci.res <- as.data.frame(do.call(rbind, c(ci.res1, ci.res2, ci.res3, ci.res4)))
+#ci.res <- as.data.frame(do.call(rbind, c(ci.res1, ci.res2, ci.res3, ci.res4)))
 #TEMP
 ci.res <- as.data.frame(do.call(rbind, c(ci.res1)))
 
@@ -383,5 +433,5 @@ multiplot(p_pool,barplot)
 #-----------------------------------
 # save plot dataframe
 #-----------------------------------
-save(ci.res, plotdf, file="U:/Data/Stunting/co_CI.RData")
+save(ci.res, res_co_ci, plotdf, file="U:/Data/Stunting/co_CI.RData")
 

@@ -26,7 +26,7 @@ d <- d %>% filter(measurefreq=="monthly")
 
 
 # define age windows
-d <- d %>% filter(agedays <= 24*30.4167)
+d <- d %>% filter(agedays <= 25*30.4167)
 
 #Cut into 3 month quartiles
 d <- d %>% mutate(agemonth = agedays/30.4167)
@@ -44,10 +44,10 @@ table(d$agecat)
 
 
 
-#Quartile WHZ
+#Quartile WHZ and HAZ
 d_whzcat <- d %>% group_by(subjid, agecat) %>% mutate(meanWHZ = mean(whz)) %>% slice(1) %>% arrange(subjid,agecat, agedays) %>%
   group_by(agecat) %>% mutate(agelevel=as.numeric(agecat),WHZ_quart = (ntile(meanWHZ, 4))) %>% 
-  subset(., select = -c(haz, whz, agedays)) %>% ungroup() %>%
+  subset(., select = -c(haz, whz, agedays, measurefreq)) %>% ungroup() %>%
   mutate(lag_agelevel= lag(agelevel), lag_WHZ_quart=lag(WHZ_quart)) %>%
   filter(!is.na(lag_WHZ_quart)) %>%
   filter(agelevel==lag_agelevel+1) %>%
@@ -57,9 +57,41 @@ d_whzcat <- d %>% group_by(subjid, agecat) %>% mutate(meanWHZ = mean(whz)) %>% s
 table(d_whzcat$agecat, d_whzcat$WHZ_quart)
 
 
+d_hazcat <- d %>% group_by(subjid, agecat) %>% mutate(meanHAZ = mean(haz)) %>% slice(1) %>% arrange(subjid,agecat, agedays) %>%
+  group_by(agecat) %>% mutate(agelevel=as.numeric(agecat),HAZ_quart = (ntile(meanHAZ, 4))) %>% 
+  subset(., select = -c(haz, whz, agedays, measurefreq)) %>% ungroup() %>%
+  mutate(lag_agelevel= lag(agelevel), lag_HAZ_quart=lag(HAZ_quart)) %>%
+  filter(!is.na(lag_HAZ_quart)) %>%
+  filter(agelevel==lag_agelevel+1) %>%
+  mutate(lag_HAZ_quart=factor(lag_HAZ_quart))
+
+
+#mark measure frequencies
+d$measurefreq <- NA
+
+d$measurefreq[d$studyid %in% c(
+  "ki0047075b-MAL-ED",   
+  "ki1000108-CMC-V-BCS-2002",              
+  "ki1000108-IRC",               
+  "ki1000109-EE",           
+  "ki1000109-ResPak",  
+  "ki1017093b-PROVIDE",  
+  "ki1066203-TanzaniaChild2",           
+  "ki1101329-Keneba",  
+  "ki1112895-Guatemala BSC",       
+  "ki1113344-GMS-Nepal",             
+  "ki1114097-CONTENT"
+)] <- "monthly"
+
+
+
 df <- left_join(d, d_whzcat, by=c("subjid", "agecat"))
 df <- df %>% filter(!is.na(lag_WHZ_quart))
 df <- droplevels(df)
+
+df_HAZ <- left_join(d, d_hazcat, by=c("subjid", "agecat"))
+df_HAZ <- df_HAZ %>% filter(!is.na(lag_HAZ_quart))
+df_HAZ <- droplevels(df_HAZ)
 
 
 #Splines of HAZ by prior WHZ category
@@ -67,7 +99,10 @@ df <- droplevels(df)
 tableau10 <- c("#1F77B4","#FF7F0E","#2CA02C","#D62728", 
                "#9467BD","#8C564B","#E377C2","#7F7F7F","#BCBD22","#17BECF")
 
-p<-ggplot(df, aes(x=agedays, y=haz, group=lag_WHZ_quart, color=lag_WHZ_quart)) + geom_smooth(method = 'gam', formula= y ~ s(x,  k=4, bs = "cs")) +
+plotdf <- df %>% filter(measurefreq=="monthly")
+plotdf_HAZ <- df_HAZ %>% filter(measurefreq=="monthly")
+
+p<-ggplot(plotdf, aes(x=agedays, y=haz, group=lag_WHZ_quart, color=lag_WHZ_quart)) + geom_smooth(method = 'loess') +
   facet_wrap(~agecat, scales="free_x", nrow=1) +
   scale_color_manual(values=tableau10, name = "Quartile of WHZ in\nthe prior 3 months")+
   xlab("Child age in days") + ylab("HAZ") + 
@@ -77,7 +112,7 @@ p<-ggplot(df, aes(x=agedays, y=haz, group=lag_WHZ_quart, color=lag_WHZ_quart)) +
         strip.text.x = element_text(size=12),
         axis.text.x = element_text(size=12, angle = 0, hjust = 1)) 
 
-save(df, file="U:/Data/Stunting/HAZ_by_WHZ.RData")
+save(plotdf, plotdf_HAZ, file="U:/Data/Stunting/HAZ_by_WHZ.RData")
 ggsave(p, file="U:/Figures/Stunting Webinar/HAZcurves_by_WHZ.png", width=5.7, height=4.6)
 
 
@@ -130,14 +165,16 @@ dprev = d %>%
                               ifelse(agedays>5*30.4167 & agedays<7*30.4167,"6 months",
                                      ifelse(agedays>8*30.4167 & agedays<10*30.4167,"9 months",
                                             ifelse(agedays>11*30.4167 & agedays<13*30.4167,"12 months",
-                                                   ifelse(agedays>17*30.4167 & agedays<19*30.4167,"18 months",
-                                                          ifelse(agedays>23*30.4167& agedays<25*30.4167,"24 months","")))))))) %>%
+                                                   ifelse(agedays>14*30.4167 & agedays<16*30.4167,"15 months",
+                                                          ifelse(agedays>17*30.4167 & agedays<19*30.4167,"18 months",
+                                                                 ifelse(agedays>20*30.4167 & agedays<22*30.4167,"21 months",
+                                                          ifelse(agedays>23*30.4167& agedays<25*30.4167,"24 months","")))))))))) %>%
   mutate(agecat=factor(agecat,levels=c("Birth","3 months","6 months","9 months",
-                                       "12 months","18 months","24 months")),
+                                       "12 months","15 months","18 months","21 months","24 months")),
          agelevel=(as.numeric(agecat)-1)*3) %>%
   filter(!is.na(agecat))
 
-
+table(dprev$agecat)
 
 #  Get the observation closest to prevalence times
 dprev <- dprev %>%
@@ -164,10 +201,11 @@ stuntCI_whz <- left_join(stunt_ci, d_whzcat, by=c("studyid","country","subjid", 
 
 table(stuntCI_whz$agecat, stuntCI_whz$lag_WHZ_quart, stuntCI_whz$ever_stunted)
 
+table(stuntCI_whz$agecat, stuntCI_whz$studyid, stuntCI_whz$ever_stunted)
 
 table(d_whzcat$agecat)
 dprev_whzcat <- d_whzcat 
-dprev_whzcat$agecat <- factor(paste0(sapply(strsplit(as.character(dprev_whzcat$agecat), "-", fixed=T), `[`, 1)," months"))
+dprev_whzcat$agecat <- factor(paste0(sapply(strsplit(as.character(dprev_whzcat$agecat), "-", fixed=T), `[`, 2)," months"))
 table(dprev_whzcat$agecat)
 
 

@@ -18,7 +18,7 @@ tableau10 <- c("#1F77B4","#FF7F0E","#2CA02C","#D62728",
                "#9467BD","#8C564B","#E377C2","#7F7F7F","#BCBD22","#17BECF")
 
 # load base functions
-source("U:/Scripts/Stunting/2-analyses/0_st_basefunctions.R")
+source("U:/Scripts/Stunting/1-outcomes/0_st_basefunctions.R")
 
 load("U:/Data/Co-occurrence/co-occurrence_data.RData")
 
@@ -30,12 +30,16 @@ d = d %>%
       ifelse(agedays>5*30.4167 & agedays<7*30.4167,"6 months",
              ifelse(agedays>8*30.4167 & agedays<10*30.4167,"9 months",
                   ifelse(agedays>11*30.4167 & agedays<13*30.4167,"12 months",
-              ifelse(agedays>17*30.4167 & agedays<19*30.4167,"18 months",
-                     ifelse(agedays>23*30.4167& agedays<25*30.4167,"24 months","")))))))) %>%
+                         ifelse(agedays>14*30.4167 & agedays<16*30.4167,"15 months",
+                                ifelse(agedays>17*30.4167 & agedays<19*30.4167,"18 months",
+                                       ifelse(agedays>20*30.4167 & agedays<22*30.4167,"21 months",
+                     ifelse(agedays>23*30.4167& agedays<25*30.4167,"24 months","")))))))))) %>%
     mutate(agecat=factor(agecat,levels=c("Birth","3 months","6 months","9 months",
-                                         "12 months","18 months","24 months")),
+                                         "12 months","15 months","18 months","21 months","24 months")),
            agelevel=(as.numeric(agecat)-1)*3) %>%
     filter(!is.na(agecat))
+
+table(d$agelevel)
 
 # check age categories
 d %>%
@@ -56,6 +60,8 @@ dmn <- d %>%
 mean(dmn$N)
 
 
+
+
 #Calc outcomes
 
 dmn$cowaststunt=ifelse(dmn$haz< -2 & dmn$whz < -2, 1,0)
@@ -73,6 +79,7 @@ dmn < dmn %>% arrange(status)
 table(dmn$agecat, dmn$status)
 
 
+saveRDS(dmn, "U:/results/Co-occurrence/co-prev.rds")
 
 
 
@@ -88,20 +95,20 @@ prev.data = dmn %>%
   filter(nmeas>=50) 
   
 # cohort specific results
-prev.cohort=lapply(list("Birth","3 months","6 months","9 months","12 months","18 months","24 months"),function(x) 
+prev.cohort=lapply(list("Birth","3 months","6 months","9 months","12 months","15 months","18 months","21 months","24 months"),function(x) 
   fit.escalc(data=prev.data,ni="nmeas", xi="nxprev",age=x,meas="PR"))
 prev.cohort=as.data.frame(do.call(rbind, prev.cohort))
 prev.cohort=cohort.format(prev.cohort,y=prev.cohort$yi,
                          lab=  c("Birth","3m","6m","9m","12m","18m","24m"))
 
 # estimate random effects, format results
-prev.res=lapply(list("Birth","3 months","6 months","9 months","12 months","18 months","24 months"),function(x) 
+prev.res=lapply(list("Birth","3 months","6 months","9 months","12 months","15 months","18 months","21 months","24 months"),function(x) 
   fit.rma(data=prev.data,ni="nmeas", xi="nxprev",age=x,measure="PR",nlab="children"))
 prev.res=as.data.frame(do.call(rbind, prev.res))
 prev.res[,4]=as.numeric(prev.res[,4])
                 prev.res = prev.res %>%
   mutate(est=est*100,lb=lb*100,ub=ub*100)
-prev.res$agecat=factor(prev.res$agecat,levels=c("Birth","3 months","6 months","9 months","12 months","18 months","24 months"))
+prev.res$agecat=factor(prev.res$agecat,levels=c("Birth","3 months","6 months","9 months","12 months","15 months","18 months","21 months","24 months"))
 prev.res$ptest.f=sprintf("%0.0f",prev.res$est)
 
 # plot cohort prevalence
@@ -239,4 +246,4 @@ multiplot(p_pool,barplot_NH)
 #-----------------------------------
 # save plot dataframe
 #-----------------------------------
-save(prev.res, prev.cohort, dmn, file="U:/Data/Stunting/co_prev.RData")
+save(prev.res, prev.cohort, dmn, file="U:/ucb-superlearner/Co-occurrence/co_prev.RData")

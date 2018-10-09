@@ -67,21 +67,21 @@ d_hazcat <- d %>% group_by(subjid, agecat) %>% mutate(meanHAZ = mean(haz)) %>% s
 
 
 #mark measure frequencies
-d$measurefreq <- NA
-
-d$measurefreq[d$studyid %in% c(
-  "ki0047075b-MAL-ED",   
-  "ki1000108-CMC-V-BCS-2002",              
-  "ki1000108-IRC",               
-  "ki1000109-EE",           
-  "ki1000109-ResPak",  
-  "ki1017093b-PROVIDE",  
-  "ki1066203-TanzaniaChild2",           
-  "ki1101329-Keneba",  
-  "ki1112895-Guatemala BSC",       
-  "ki1113344-GMS-Nepal",             
-  "ki1114097-CONTENT"
-)] <- "monthly"
+# d$measurefreq <- NA
+# 
+# d$measurefreq[d$studyid %in% c(
+#   "ki0047075b-MAL-ED",   
+#   "ki1000108-CMC-V-BCS-2002",              
+#   "ki1000108-IRC",               
+#   "ki1000109-EE",           
+#   "ki1000109-ResPak",  
+#   "ki1017093b-PROVIDE",  
+#   "ki1066203-TanzaniaChild2",           
+#   "ki1101329-Keneba",  
+#   "ki1112895-Guatemala BSC",       
+#   "ki1113344-GMS-Nepal",             
+#   "ki1114097-CONTENT"
+# )] <- "monthly"
 
 
 

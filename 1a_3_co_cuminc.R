@@ -19,7 +19,7 @@ library(metafor)
 theme_set(theme_bw())
 
 # load base functions
-source("U:/Scripts/Stunting/2-analyses/0_st_basefunctions.R")
+source("U:/Scripts/Stunting/1-outcomes/0_st_basefunctions.R")
 
 load("U:/Data/Co-occurrence/co-occurrence_data.RData")
 
@@ -28,14 +28,8 @@ load("U:/Data/Co-occurrence/co-occurrence_data.RData")
 #Subset analysis to monthly studies
 d <- d %>% filter(measurefreq=="monthly")
 
-#TEMP
-#d <- d %>% filter(studyid=="ki1066203-TanzaniaChild2")
-
-
-
 # define age windows
 d = d %>% 
-  #filter(agedays>1) %>%
   mutate(agecat=
            ifelse(agedays>0 & agedays<=6*30.4167,"6 months",
                   ifelse(agedays>6*30.4167 & agedays<=12*30.4167,"12 months",
@@ -202,6 +196,7 @@ co_ci %>% group_by(studyid, country, agecat) %>% summarize(n(), sum(co_inc), mea
 co_ci %>% group_by(agecat) %>% summarize(n(), sum(anystunt_wast), mean(anystunt_wast))
 
 save(co_ci,file="U:/Data/Co-occurrence/co_ci.RData")
+saveRDS(co_ci, "U:/results/Co-occurrence/co-ci.rds")
 
 
       table(co_ci$which_first)
@@ -304,7 +299,7 @@ ci.res <- ci.res %>% arrange(OutcomeName, agecat)
 
 
 
-save(ci.res, file="U:/Data/Co-occurrence/pooled_CI_res.RData")
+save(co_ci, ci.res, file="U:/UCB-SuperLearner/Co-occurrence/pooled_CI_res.RData")
 
 
 pdf("U:/Figures/co-occurance-ci-pool.pdf",width=8,height=8,onefile=TRUE)

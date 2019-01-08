@@ -74,7 +74,7 @@ dmn$status[dmn$onlywast==1] <- "Wasting only"
 dmn$status[dmn$onlystunt==1] <- "Stunting only"
 dmn$status[dmn$nowaststunt==1] <- "Healthy"
 dmn$status <- factor(dmn$status, levels=rev(c("Co-occurence", "Wasting only", "Stunting only", "Healthy")))
-dmn < dmn %>% arrange(status)
+dmn <- dmn %>% arrange(status)
 
 table(dmn$agecat, dmn$status)
 
@@ -174,7 +174,7 @@ dev.off()
 # export
 prev = dmn %>% 
   select(studyid,subjid,country,agecat,
-         cowaststunt, cowaststunt)
+         cowaststunt)
 
 save(prev, file="U:/Data/Co-occurrence/co_prev.RData")
 

@@ -10,24 +10,20 @@ library(reshape2)
 
 #merge outcomes with covariates
 
-setwd("U:/ucb-superlearner/Co-occurrence/")
+setwd("U:/UCB-SuperLearner/Co-occurrence/")
 
 #load covariates
 cov<-readRDS("U:/ucb-superlearner/stunting rallies/FINAL_clean_covariates.rds")
 
 #load outcomes
 load("co_prev.RData")
-load("co_cuminc.rdata")
-load("co_cuminc_nobirth.rdata")
-load("pers_co.rdata")
-load("co_rec.rdata")
+load("co_CI_rf_outcomes.RData")
+load("pooled_CI_res.RData")
 
 
 #convert subjid to character for the merge with covariate dataset
-cov$subjid <- as.character(cov$subjid)
-prev$subjid <- as.character(prev$subjid)
-cuminc$subjid <- as.character(cuminc$subjid)
-cuminc_nobirth$subjid <- as.character(cuminc_nobirth$subjid)
+dmn$subjid <- as.character(dmn$subjid)
+co_ci$subjid <- as.character(co_ci$subjid)
 
 
 
@@ -37,7 +33,10 @@ cuminc_nobirth$subjid <- as.character(cuminc_nobirth$subjid)
 
 #merge in covariates
 cuminc <- cuminc %>% subset(., select = -c(tr))
+dim(cuminc)
+dim(cov)
 d <- left_join(cuminc, cov, by=c("studyid", "subjid", "country"))
+dim(d)
 head(d)
 
 
